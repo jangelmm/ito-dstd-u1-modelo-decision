@@ -1,0 +1,9 @@
+Fiebre,Tos,Dolor,EdadMayor50,Enfermedad
+Alta,si,si,si,si
+Alta,si,no,no,si
+Alta,no,si,si,si
+Alta,no,no,no,no
+Baja,si,si,no,no
+Baja,si,no,si,no
+Baja,no,si,no,no
+Baja,no,no,si,no

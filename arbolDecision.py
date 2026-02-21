@@ -35,8 +35,11 @@ PROPORCION_TEST = 0.2       # solo se usa si HACER_SPLIT = True
 # ==============================================================================
 # >>> MODIFICAR AQUI <<< SECCION 1: DATASET
 #
-# Opcion A: cargar desde archivo
-#   df = pd.read_csv("tu_archivo.csv")
+# Opcion A: cargar desde archivo (poner el csv afuera de la carpeta de arbolDecision.py)
+df = pd.read_csv("datos_csv.csv")
+data = df.to_dict(orient="list")
+
+
 #
 # Opcion B: definir los datos directamente (como en este ejemplo)
 #
@@ -55,7 +58,7 @@ data = {
     "Enfermedad":   ["Si",   "Si",   "Si",   "No",   "No",   "No",   "No",   "No"],
 }
 
-df = pd.DataFrame(data)
+#df = pd.DataFrame(data)
 
 
 # ==============================================================================
