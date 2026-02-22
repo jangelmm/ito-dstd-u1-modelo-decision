@@ -23,8 +23,35 @@ import matplotlib.pyplot as plt
 # Puedes ajustar estos hiperparametros sin tocar nada mas.
 # ==============================================================================
 
-CRITERIO        = "gini"    # "gini" o "entropy"
-MAX_PROFUNDIDAD = None      # None = sin limite | entero = limita profundidad
+# B1 - El usuario elige el Criterio de División (Gini vs. Entropía)
+
+while True:
+    criterio_input = input("Seleccione el criterio de division (gini / entropy): ").strip().lower()
+    
+    if criterio_input in ["gini", "entropy"]:
+        CRITERIO = criterio_input
+        break
+    else:
+        print("Error: Debe escribir 'gini' o 'entropy'. Intente nuevamente.\n")
+
+# B2 - Selección de profundidad del arbol
+
+while True:
+    profundidad_input = input("Ingrese la profundidad maxima del arbol (Enter para sin limite): ").strip()
+    
+    if profundidad_input == "":
+        MAX_PROFUNDIDAD = None
+        break
+    
+    if profundidad_input.isdigit():
+        profundidad_val = int(profundidad_input)
+        if profundidad_val > 0:
+            MAX_PROFUNDIDAD = profundidad_val
+            break
+    
+    print("Error: Ingrese un numero entero positivo o deje vacio para sin limite.\n")
+# ------------------------------------------------------------------------------
+
 MIN_MUESTRAS_SPLIT = 2      # minimo de muestras para dividir un nodo
 MIN_MUESTRAS_HOJA  = 1      # minimo de muestras en una hoja
 RANDOM_STATE    = 42
