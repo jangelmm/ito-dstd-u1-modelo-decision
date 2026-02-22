@@ -23,7 +23,18 @@ import matplotlib.pyplot as plt
 # Puedes ajustar estos hiperparametros sin tocar nada mas.
 # ==============================================================================
 
-CRITERIO        = "gini"    # "gini" o "entropy"
+# B1 - El usuario elige el Criterio de División (Gini vs. Entropía)
+
+while True:
+    criterio_input = input("Seleccione el criterio de division (gini / entropy): ").strip().lower()
+    
+    if criterio_input in ["gini", "entropy"]:
+        CRITERIO = criterio_input
+        break
+    else:
+        print("Error: Debe escribir 'gini' o 'entropy'. Intente nuevamente.\n")
+# ------------------------------------------------------------------------------
+
 MAX_PROFUNDIDAD = None      # None = sin limite | entero = limita profundidad
 MIN_MUESTRAS_SPLIT = 2      # minimo de muestras para dividir un nodo
 MIN_MUESTRAS_HOJA  = 1      # minimo de muestras en una hoja
