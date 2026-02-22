@@ -58,6 +58,91 @@ RANDOM_STATE    = 42
 HACER_SPLIT     = False     # True si tienes suficientes datos (recomendado >50 filas)
 PROPORCION_TEST = 0.2       # solo se usa si HACER_SPLIT = True
 
+# C - Evaluar como cambia la decisión del modelo al variar un solo parámetro
+def menu_interactivo_simulacion(modelo_entrenado, cliente_base, df_original, X_entrenamiento, nombres_clases):
+    
+    # 1. Preguntar si desea entrar al simulador
+    while True:
+        resp = input("\n¿Desea cambiar un parámetro del cliente para probar diferentes escenarios interactivos? (si/no): ").strip().lower()
+        if resp in ['si', 'no']:
+            break
+        print("Error: Debe ingresar 'si' o 'no'.")
+        
+    if resp == 'no':
+        print("\nTerminando programa...\n")
+        return
+        
+    # Extraemos los parámetros dinámicamente del cliente base
+    parametros = list(cliente_base.keys())
+    
+    # 2. Bucle principal del menú
+    while True:
+        print("\n-- Simulador interactivo de decisiones --")
+        print("="*55)
+        print("Parámetros actuales del cliente:")
+        for k, v in cliente_base.items():
+            print(f"  {k}: {v[0]}")
+            
+        # Predecir con el estado actual
+        df_codificado = codificar_nuevo_caso(cliente_base, X_entrenamiento)
+        prediccion_num = modelo_entrenado.predict(df_codificado)[0]
+        print(f"\n--> Decisión del Árbol: {nombres_clases[prediccion_num].upper()} <--")
+        
+        print("\n¿Qué parámetro desea modificar?")
+        for i, param in enumerate(parametros):
+            print(f"  {i+1}. {param}")
+        print(f"  {len(parametros)+1}. Salir y finalizar programa")
+        
+        opcion_param = input("\nSeleccione el número del parámetro: ").strip()
+
+        # Validar entrada del parámetro
+        if not opcion_param.isdigit():
+            print("Error: Opción no válida. Ingrese un número.")
+            continue
+            
+        opcion_param = int(opcion_param)
+        
+        if opcion_param == len(parametros) + 1:
+            print("\nSaliendo del simulador interactivo y terminando programa...")
+            break
+            
+        if opcion_param < 1 or opcion_param > len(parametros):
+            print("Error: El número no existe en la lista. Intente nuevamente.")
+            continue
+            
+        param_seleccionado = parametros[opcion_param - 1]
+        
+        # Obtener los valores posibles directamente del dataset original (sin fijarlos)
+        valores_posibles = df_original[param_seleccionado].unique().tolist()
+        
+        # 3. Submenú para seleccionar el nuevo valor
+        while True:
+            print(f"\nOpciones posibles para '{param_seleccionado}':")
+            for j, val in enumerate(valores_posibles):
+                print(f"  {j+1}. {val}")
+            print(f"  {len(valores_posibles)+1}. Cancelar y volver al menú principal")
+            
+            opcion_val = input(f"\nSeleccione el número del nuevo valor: ").strip()
+            
+            # Validar entrada del valor
+            if not opcion_val.isdigit():
+                print("Error: Opción no válida. Ingrese un número.")
+                continue
+                
+            opcion_val = int(opcion_val)
+            
+            if opcion_val == len(valores_posibles) + 1:
+                break # Vuelve al menú de parámetros
+                
+            if opcion_val < 1 or opcion_val > len(valores_posibles):
+                print("Error: El número no existe en las opciones. Intente nuevamente.")
+                continue
+                
+            # Aplicar el cambio
+            nuevo_valor = valores_posibles[opcion_val - 1]
+            cliente_base[param_seleccionado] = [nuevo_valor]
+            print(f"\n[!] Parámetro '{param_seleccionado}' actualizado con éxito a '{nuevo_valor}'.")
+            break
 
 # ==============================================================================
 # >>> MODIFICAR AQUI <<< SECCION 1: DATASET
@@ -155,7 +240,7 @@ def codificar_nuevo_caso(nuevo_caso_dict, X_entrenamiento):
     Usa reindex para garantizar que las columnas coincidan exactamente.
     """
     nuevo_df  = pd.DataFrame(nuevo_caso_dict)
-    nuevo_enc = pd.get_dummies(nuevo_df, drop_first=True)
+    nuevo_enc = pd.get_dummies(nuevo_df)
     nuevo_enc = nuevo_enc.reindex(columns=X_entrenamiento.columns, fill_value=0)
     return nuevo_enc
 
@@ -299,3 +384,12 @@ else:
     evaluar(modelo, X, y, nombres_clases=nombres_clases)
 
 mostrar_reglas(modelo, X)
+# ==============================================================================
+# PRUEBA DE SENSIBILIDAD (WHAT-IF) INTERACTIVA
+# ==============================================================================
+
+# Tomamos una copia profunda del caso inicial del script para no modificar el original
+paciente_interactivo = nuevo_caso.copy()
+
+# Llamamos al nuevo menú interactivo
+menu_interactivo_simulacion(modelo, paciente_interactivo, df, X, nombres_clases)
