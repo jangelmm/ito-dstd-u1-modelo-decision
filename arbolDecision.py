@@ -78,7 +78,6 @@ def menu_interactivo_simulacion(modelo_entrenado, cliente_base, df_original, X_e
     # 2. Bucle principal del menú
     while True:
         print("\n-- Simulador interactivo de decisiones --")
-        print("="*55)
         print("Parámetros actuales del cliente:")
         for k, v in cliente_base.items():
             print(f"  {k}: {v[0]}")
@@ -191,11 +190,12 @@ COLUMNA_TARGET = "Enfermedad"
 # (excepto la columna target, que es lo que el modelo va a predecir).
 # ==============================================================================
 
+#Debe respetarse mayusculas y minusculas, como en los datos entrenados
 nuevo_caso = {
     "Fiebre":       ["Alta"],
-    "Tos":          ["Si"],
-    "Dolor":        ["No"],
-    "EdadMayor50":  ["No"],
+    "Tos":          ["si"],
+    "Dolor":        ["no"],
+    "EdadMayor50":  ["no"],
 }
 
 
@@ -384,12 +384,9 @@ else:
     evaluar(modelo, X, y, nombres_clases=nombres_clases)
 
 mostrar_reglas(modelo, X)
-# ==============================================================================
-# PRUEBA DE SENSIBILIDAD (WHAT-IF) INTERACTIVA
-# ==============================================================================
 
-# Tomamos una copia profunda del caso inicial del script para no modificar el original
+# Tomamos copia del caso inicial del script
 paciente_interactivo = nuevo_caso.copy()
 
-# Llamamos al nuevo menú interactivo
+# Llamamos al mzenú interactivo
 menu_interactivo_simulacion(modelo, paciente_interactivo, df, X, nombres_clases)
