@@ -71,7 +71,7 @@ Además, el sistema generará y guardará automáticamente un archivo gráfico l
 
 ---
 
-## 📂 Estructura del Repositorio
+## Estructura del Repositorio
 
 - `arbolDecision.py` — Script principal que contiene la lógica del negocio y el entrenamiento.
 - `datos_csv.csv` — Archivo de ejemplo con datos estructurados para evaluación.
