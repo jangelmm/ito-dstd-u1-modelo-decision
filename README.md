@@ -14,9 +14,9 @@ El modelo utiliza Aprendizaje Automático Supervisado para extraer patrones esta
 
 Para mantener el código limpio y la arquitectura comprensible, la documentación se ha dividido en dos áreas clave. **Por favor, lee estos documentos para entender el funcionamiento y fundamento del sistema:**
 
-1. ⚙️ **[Manual de Usuario y Configuración](manual_usuario.md)**
+1. **[Manual de Usuario y Configuración](manual_usuario.md)**
    _Contiene las instrucciones detalladas elaboradas por el equipo para adaptar el script a cualquier problema de clasificación, modificar hiperparámetros (criterio, profundidad, muestras) y cargar nuevos datasets._
-2. 🧮 **[Justificación Matemática y Lógica del Modelo](Logica_Modelo.md)**
+2. **[Justificación Matemática y Lógica del Modelo](Logica_Modelo.md)**
    _Documento técnico que detalla el marco teórico, el algoritmo de partición recursiva Top-Down, y el desglose matemático de las fórmulas de evaluación de riesgo algorítmico._
 
 ---
