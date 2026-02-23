@@ -10,6 +10,12 @@ La implementación de este modelo algorítmico en nuestro DSS se justifica opera
 
 # 2. Anatomía Conceptual del Árbol de Decisión
 
+### ¿Qué es un Árbol de Decisión?
+
+Un árbol de decisión es un algoritmo de aprendizaje supervisado no paramétrico, que se utiliza tanto para tareas de clasificación como de regresión. Tiene una estructura jerárquica de árbol, que consta de un nodo raíz, ramas, nodos internos y nodos hoja (Kavlakoglu, 2025).
+
+### Estructura
+
 Para estructurar el problema de negocio, el motor lógico construye una representación explícita en forma de árbol. Formalmente, esta es una estructura jerárquica compuesta por los siguientes elementos:
 
 Nodo Raíz: Representa la primera decisión a tomar y evalúa el atributo inicial más importante.
@@ -29,7 +35,8 @@ graph TD
     C -->|Atributo Z| F[Hoja: Predicción C]
 ```
 
-##  2.1. El Flujo Determinístico del Modelo
+## 2.1. El Flujo Determinístico del Modelo
+
 A diferencia de un modelo probabilístico puro que podría dejar margen a la ambigüedad en su ejecución, el flujo de este Sistema de Soporte a la Decisión es altamente estructurado. Según la documentación técnica del algoritmo, "un árbol de decisión no 'elige una hoja' arbitrariamente".
 
 El proceso de decisión sigue un flujo estrictamente determinístico:
@@ -58,9 +65,7 @@ Durante la fase de entrenamiento, el algoritmo tiene la tarea de elegir la pregu
 
 3. **Selección óptima:** El modelo compara los resultados y procede a elegir la mejor división. El criterio matemático siempre será seleccionar el corte que reduzca más la impureza y separe mejor las clases.
 
-
 4. **Partición:** Una vez encontrada la condición óptima, procede a dividir el dataset en subconjuntos más puros.
-
 
 ## 3.1. Recursividad y Condiciones de Parada
 
@@ -68,18 +73,16 @@ Este proceso de evaluación y división matemática no ocurre una sola vez, sino
 
 Las condiciones que detienen la recursividad para crear una hoja final (predicción) son:
 
-* Que el nodo sea completamente puro (impureza suficientemente baja o igual a cero).
+- Que el nodo sea completamente puro (impureza suficientemente baja o igual a cero).
 
+- Que se haya alcanzado la profundidad máxima permitida para el árbol (`max_depth`).
 
-* Que se haya alcanzado la profundidad máxima permitida para el árbol (`max_depth`).
+- Que se haya llegado al número mínimo de muestras requerido para seguir dividiendo (`min_samples_split` o `min_samples_leaf`).
 
-
-* Que se haya llegado al número mínimo de muestras requerido para seguir dividiendo (`min_samples_split` o `min_samples_leaf`).
-
-
-* Que ya no exista una mejora significativa en la reducción de la incertidumbre al intentar dividir de nuevo.
+- Que ya no exista una mejora significativa en la reducción de la incertidumbre al intentar dividir de nuevo.
 
 ---
+
 # 4. Modelos Matemáticos de Evaluación de Riesgo (El "Cerebro")
 
 Para que el algoritmo de partición recursiva pueda decidir qué pregunta hacer durante la fase de entrenamiento, el modelo "elige la pregunta que mejor separa los datos". Para lograr esto con precisión matemática, utiliza métricas que evalúan el nivel de desorden o incertidumbre en cada paso.
@@ -90,9 +93,9 @@ El sistema ha sido programado para permitirle al directivo parametrizar el model
 
 El Índice Gini es una métrica probabilística que calcula el riesgo estadístico de clasificar incorrectamente un elemento nuevo. El modelo busca la división que "reduzca más la impureza" y "separe mejor las clases".
 
-* **Fórmula Matemática:**
+- **Fórmula Matemática:**
   $$Gini = 1 - \sum p_{i}^{2}$$
-  *(Donde $p_{i}$ representa la proporción o probabilidad de cada clase en un nodo específico).*
+  _(Donde $p_{i}$ representa la proporción o probabilidad de cada clase en un nodo específico)._
 
 **Ejemplo Aplicado a la Reducción de Riesgo (Diagnóstico Médico):**
 Para demostrar el funcionamiento de esta métrica, analicemos el cálculo inicial de incertidumbre en el nodo raíz de nuestro modelo. Supongamos un conjunto histórico de 8 pacientes, donde 3 tienen la enfermedad ("Sí") y 5 no la tienen ("No").
@@ -103,7 +106,7 @@ Para demostrar el funcionamiento de esta métrica, analicemos el cálculo inicia
    $$Gini = 1 - \left( \frac{9}{64} + \frac{25}{64} \right)$$
    $$Gini = 1 - \frac{34}{64} = 0.46875$$
 
-Un índice inicial de **0.46875** indica que existe incertidumbre (mezcla de clases) en el nodo. A partir de este punto, el algoritmo prueba dividir los datos usando diferentes atributos (como "Fiebre" o "Tos") y calcula el *Gini ponderado* de las nuevas ramas. El sistema ejecutará automáticamente la división que arroje el valor Gini más cercano a **0** (pureza máxima).
+Un índice inicial de **0.46875** indica que existe incertidumbre (mezcla de clases) en el nodo. A partir de este punto, el algoritmo prueba dividir los datos usando diferentes atributos (como "Fiebre" o "Tos") y calcula el _Gini ponderado_ de las nuevas ramas. El sistema ejecutará automáticamente la división que arroje el valor Gini más cercano a **0** (pureza máxima).
 
 ```mermaid
 graph TD
@@ -113,7 +116,7 @@ graph TD
     C -->|No| E{Tos}
     E -->|Sí| F[Enfermedad]
     E -->|No| G[No enfermedad]
-    
+
     style B fill:#0f5132,stroke:#2ea043,color:#ffffff,stroke-width:2px
     style D fill:#842029,stroke:#f85149,color:#ffffff,stroke-width:2px
     style F fill:#842029,stroke:#f85149,color:#ffffff,stroke-width:2px
@@ -125,7 +128,7 @@ graph TD
 
 Como criterio algorítmico alternativo, el sistema puede emplear la **Entropía**. Mientras que el Gini es una medida de probabilidad de error, la Entropía mide la cantidad de información necesaria para describir el nivel de "caos" en los datos.
 
-* **Fórmula Matemática:**
+- **Fórmula Matemática:**
   $$Entropia = -\sum p_{i}\log_{2}(p_{i})$$
 
 Cuando el usuario selecciona este criterio, la "lógica interna cambia" hacia la Teoría de la Información, pero el "proceso estructural es el mismo". El algoritmo priorizará las divisiones que generen la mayor **Ganancia de Información**; es decir, evaluará qué pregunta logra reducir más matemáticamente el nivel de Entropía entre el nodo padre y los nodos hijos.
@@ -144,8 +147,8 @@ Una vez que el algoritmo de partición recursiva procesa el perfil de un nuevo c
 **Ejemplo de Interpretación:**
 Supongamos que el DSS arroja el siguiente resultado para un nuevo caso evaluado:
 
-* **Predicción:** Enfermedad
-* **Probabilidades:** `[0.25, 0.75]`
+- **Predicción:** Enfermedad
+- **Probabilidades:** `[0.25, 0.75]`
 
 A nivel gerencial, esto significa que de todos los datos históricos que compartían el mismo perfil y terminaron en esa misma hoja lógica, el **75%** resultaron positivos a la enfermedad, mientras que el **25%** resultaron negativos.
 
@@ -155,9 +158,11 @@ Si el árbol se configura sin límite de profundidad (`max_depth=None`), las hoj
 
 # Referencias Bibliográficas
 
-1. **Documento Interno del Equipo.** *Árbol de Decisión - Introducción*. (Base conceptual del modelo, proceso formal de construcción recursiva, fórmulas de impureza Gini, Entropía e interpretación de resultados de la librería Scikit-Learn).
-2. **Breiman, L., Friedman, J., Stone, C. J., & Olshen, R. A. (1984).** *Classification and Regression Trees*. Taylor & Francis. (Fundamentación matemática del algoritmo CART, partición recursiva y uso del Índice Gini).
-3. **Shannon, C. E. (1948).** *A Mathematical Theory of Communication*. The Bell System Technical Journal, 27(3), 379-423. (Bases formales para el cálculo de la Entropía y la Ganancia de Información).
-4. **Turban, E., Aronson, J. E., & Liang, T. P. (2005).** *Decision Support Systems and Intelligent Systems* (7th ed.). Prentice-Hall. (Fundamento gerencial sobre el análisis de toma de decisiones bajo riesgo y modelos normativos de los DSS).
+1. **Documento Interno del Equipo.** _Árbol de Decisión - Introducción_. (Base conceptual del modelo, proceso formal de construcción recursiva, fórmulas de impureza Gini, Entropía e interpretación de resultados de la librería Scikit-Learn).
+2. **Breiman, L., Friedman, J., Stone, C. J., & Olshen, R. A. (1984).** _Classification and Regression Trees_. Taylor & Francis. (Fundamentación matemática del algoritmo CART, partición recursiva y uso del Índice Gini).
+3. **Shannon, C. E. (1948).** _A Mathematical Theory of Communication_. The Bell System Technical Journal, 27(3), 379-423. (Bases formales para el cálculo de la Entropía y la Ganancia de Información).
+4. **Turban, E., Aronson, J. E., & Liang, T. P. (2005).** _Decision Support Systems and Intelligent Systems_ (7th ed.). Prentice-Hall. (Fundamento gerencial sobre el análisis de toma de decisiones bajo riesgo y modelos normativos de los DSS).
+
+5 **Kavlakoglu, E. (2025, 27 noviembre).** _Árboles de decisiones. IBM._ https://www.ibm.com/es-es/think/topics/decision-trees
 
 ---

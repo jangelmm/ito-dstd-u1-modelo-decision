@@ -451,7 +451,7 @@ Los siguientes parámetros se pueden ajustar al inicio del script (líneas 26-59
 
 ## 12. GLOSARIO DE TÉRMINOS
 
-- **Árbol de Decisión:** Modelo de machine learning que divide recursivamente los datos mediante condiciones para llegar a una predicción final.
+- **Árbol de Decisión:** Es un algoritmo de aprendizaje supervisado no paramétrico, que se utiliza tanto para tareas de clasificación como de regresión.
 - **Atributo / Feature / Variable:** Característica de entrada que el modelo usa (ej: Fiebre).
 - **Clase / Target / Etiqueta:** Variable de salida que el modelo intenta predecir (ej: Enfermedad).
 - **Criterio de División:** Métrica matemática para elegir la mejor división en cada nodo (Gini o Entropía).
