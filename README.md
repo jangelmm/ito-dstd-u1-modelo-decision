@@ -10,6 +10,19 @@ El modelo utiliza Aprendizaje Automático Supervisado para extraer patrones esta
 
 ---
 
+## Equipo 4 
+```
+   Integrantes:
+- Candelaria Velazquez Rodriguez.
+- Diego García Jennifer.
+- García Gallegos Eric
+- Elorza Perez Joaquín Baruc
+- Martínez Mendoza Jesús Angel
+- Hernández Soriano Manuel
+```
+---
+
+
 ## Índice de Documentación del Proyecto
 
 Para mantener el código limpio y la arquitectura comprensible, la documentación se ha dividido en dos áreas clave. **Por favor, lee estos documentos para entender el funcionamiento y fundamento del sistema:**
