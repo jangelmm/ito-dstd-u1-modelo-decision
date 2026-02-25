@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árbol de Decisión</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #7c6af7;
+    --accent2: #f76a8c;
+    --accent3: #6af7c8;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* Grid background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 56px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tag::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  /* Steps */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.25s, transform 0.25s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .step:nth-child(1) { animation-delay: 0.1s; }
+  .step:nth-child(2) { animation-delay: 0.2s; }
+  .step:nth-child(3) { animation-delay: 0.3s; }
+  .step:nth-child(4) { animation-delay: 0.4s; }
+  .step:nth-child(5) { animation-delay: 0.5s; }
+
+  .step::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .step:hover {
+    border-color: rgba(124,106,247,0.4);
+    transform: translateY(-1px);
+  }
+
+  .step:hover::before { opacity: 1; }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(124,106,247,0.1);
+    border: 1px solid rgba(124,106,247,0.25);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Criterion toggle */
+  .criterion-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .criterion-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--text);
+  }
+
+  .criterion-btn:hover {
+    border-color: rgba(124,106,247,0.5);
+    background: rgba(124,106,247,0.06);
+  }
+
+  .criterion-btn.active {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.12);
+  }
+
+  .criterion-btn.active .cb-name { color: var(--accent); }
+
+  .cb-name {
+    font-size: 17px;
+    font-weight: 700;
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .cb-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-family: var(--mono);
+  }
+
+  /* Depth control */
+  .depth-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .depth-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+    width: 100px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .depth-input:focus { border-color: var(--accent); }
+  .depth-input::-webkit-inner-spin-button { opacity: 0.5; }
+
+  .depth-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .checkbox-row input[type=checkbox] {
+    appearance: none;
+    width: 18px; height: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .checkbox-row input[type=checkbox]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkbox-row input[type=checkbox]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    color: white;
+    font-weight: 700;
+  }
+
+  .checkbox-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+    user-select: none;
+  }
+
+  /* File upload */
+  .file-zone {
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: var(--surface2);
+    position: relative;
+  }
+
+  .file-zone:hover, .file-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.06);
+  }
+
+  .file-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .file-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    display: block;
+    line-height: 1;
+  }
+
+  .file-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .file-sublabel {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .file-selected {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(106,247,200,0.08);
+    border: 1px solid rgba(106,247,200,0.25);
+    border-radius: 10px;
+    margin-top: 14px;
+  }
+
+  .file-selected.show { display: flex; }
+
+  .file-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent3);
+    font-weight: 700;
+  }
+
+  .file-rows {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* Select */
+  .select-wrap {
+    position: relative;
+  }
+
+  select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 40px 12px 16px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  select:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    font-size: 12px;
+  }
+
+  .placeholder-opt { color: var(--muted); }
+
+  /* Preview table */
+  .preview-wrap {
+    margin-top: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .preview-wrap.show { display: block; }
+
+  .preview-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 8px 14px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-scroll {
+    overflow-x: auto;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  th {
+    background: var(--surface2);
+    padding: 7px 14px;
+    text-align: left;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    position: sticky; top: 0;
+  }
+
+  th.target-col {
+    color: var(--accent2);
+    background: rgba(247,106,140,0.08);
+  }
+
+  td {
+    padding: 6px 14px;
+    border-bottom: 1px solid rgba(42,42,61,0.5);
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  td.target-col {
+    color: var(--accent2);
+    background: rgba(247,106,140,0.04);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  /* New case inputs */
+  .new-case-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  .case-field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .case-field input, .case-field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .case-field input:focus, .case-field select:focus { border-color: var(--accent); }
+
+  /* Run button */
+  .run-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .run-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+  }
+
+  .run-btn:hover::before { width: 400px; height: 400px; }
+  .run-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,106,247,0.4); }
+  .run-btn:active { transform: translateY(0); }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Result */
+  .result-card {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-top: 20px;
+    animation: fadeUp 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card.show { display: block; }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .result-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .result-class {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--accent3);
+    margin-bottom: 20px;
+  }
+
+  .result-probs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .prob-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .prob-name {
+    width: 80px;
+    color: var(--muted);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .prob-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .prob-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 0;
+  }
+
+  .prob-val {
+    width: 42px;
+    text-align: right;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .result-rules {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rules-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .rules-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .accuracy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 12px;
+    background: rgba(106,247,200,0.08);
+    border: 1px solid rgba(106,247,200,0.25);
+    border-radius: 8px;
+    color: var(--accent3);
+    margin-top: 16px;
+  }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent2);
+    padding: 10px 14px;
+    background: rgba(247,106,140,0.08);
+    border: 1px solid rgba(247,106,140,0.25);
+    border-radius: 8px;
+    margin-top: 14px;
+  }
+
+  .error-msg.show { display: block; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+  }
+
+  .loading.show { display: flex; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 6px 0 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="tag">Machine Learning</div>
+    <h1>Árbol de Decisión</h1>
+    <p class="subtitle">Clasificación supervisada — configura, entrena y predice</p>
+  </header>
+
+  <div class="steps">
+
+    <!-- Step 1: Criterion -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">Criterio de División</div>
+          <div class="step-desc">Función de impureza para dividir nodos</div>
+        </div>
+      </div>
+      <div class="criterion-toggle">
+        <button class="criterion-btn active" onclick="setCriterion('gini', this)">
+          <span class="cb-name">Gini</span>
+          <span class="cb-desc">Impureza Gini.<br>Rápido, default estándar.</span>
+        </button>
+        <button class="criterion-btn" onclick="setCriterion('entropy', this)">
+          <span class="cb-name">Entropy</span>
+          <span class="cb-desc">Ganancia de información.<br>Más balanceado.</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Depth -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">Profundidad Máxima</div>
+          <div class="step-desc">Controla la complejidad del árbol</div>
+        </div>
+      </div>
+      <div class="depth-row">
+        <input type="number" class="depth-input" id="maxDepth" placeholder="∞" min="1" max="50">
+        <span class="depth-hint">Vacío = sin límite</span>
+      </div>
+      <div style="margin-top:16px;">
+        <label class="checkbox-row">
+          <input type="checkbox" id="doSplit">
+          <span class="checkbox-label">Dividir en train/test (80/20) — recomendado si tienes más de 50 filas</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Step 3: CSV -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">Cargar Dataset</div>
+          <div class="step-desc">Archivo CSV con columnas de features y target</div>
+        </div>
+      </div>
+      <div class="file-zone" id="fileZone">
+        <input type="file" id="csvFile" accept=".csv">
+        <span class="file-icon">📂</span>
+        <div class="file-label">Arrastra tu CSV aquí</div>
+        <div class="file-sublabel">o haz clic para seleccionar · .csv hasta 10 MB</div>
+      </div>
+      <div class="file-selected" id="fileSelected">
+        <span>📄</span>
+        <span class="file-name" id="fileName">—</span>
+        <span class="file-rows" id="fileRows">—</span>
+      </div>
+      <div class="error-msg" id="fileError"></div>
+
+      <!-- Preview -->
+      <div class="preview-wrap" id="previewWrap">
+        <div class="preview-label">Vista previa</div>
+        <div class="preview-scroll">
+          <table id="previewTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Target -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">04</div>
+        <div>
+          <div class="step-title">Columna Target</div>
+          <div class="step-desc">Variable a predecir (clase)</div>
+        </div>
+      </div>
+      <div class="select-wrap">
+        <select id="targetCol" onchange="onTargetChange()">
+          <option value="" class="placeholder-opt">— Carga un CSV primero —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 5: New case -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">05</div>
+        <div>
+          <div class="step-title">Nuevo Caso a Predecir</div>
+          <div class="step-desc">Valores de las features para clasificar</div>
+        </div>
+      </div>
+      <div class="new-case-grid" id="newCaseGrid">
+        <p style="color:var(--muted);font-family:var(--mono);font-size:12px;">Carga el CSV y selecciona el target para ver los campos.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Run -->
+  <button class="run-btn" id="runBtn" onclick="runModel()" disabled>
+    ▶ Entrenar y Predecir
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Entrenando modelo...</span>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-label">Clase Predicha</div>
+    <div class="result-class" id="resultClass">—</div>
+    <div class="result-probs" id="resultProbs"></div>
+    <div class="accuracy-badge" id="accuracyBadge">
+      <span>⬡</span><span id="accuracyVal">—</span>
+    </div>
+    <div class="result-rules">
+      <div class="rules-label">Reglas del Árbol</div>
+      <div class="rules-text" id="rulesText">—</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Load ml.js libs from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  criterion: 'gini',
+  csvData: null,
+  columns: [],
+  targetCol: null,
+};
+
+// ── Criterion ──────────────────────────────────────────────────────────────
+function setCriterion(val, btn) {
+  state.criterion = val;
+  document.querySelectorAll('.criterion-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── CSV Load ───────────────────────────────────────────────────────────────
+document.getElementById('csvFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) loadCSV(file);
+});
+
+const zone = document.getElementById('fileZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) loadCSV(file);
+  else showFileError('Solo se aceptan archivos .csv');
+});
+
+function showFileError(msg) {
+  const el = document.getElementById('fileError');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function loadCSV(file) {
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: true,
+    complete: function(results) {
+      if (!results.data || results.data.length === 0) {
+        showFileError('El CSV está vacío o mal formateado.'); return;
+      }
+      state.csvData = results.data;
+      state.columns = results.meta.fields;
+
+      // File badge
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileRows').textContent = `${results.data.length} filas · ${state.columns.length} cols`;
+      document.getElementById('fileSelected').classList.add('show');
+
+      // Preview
+      buildPreview(results.data.slice(0, 5), state.columns, null);
+
+      // Target selector
+      const sel = document.getElementById('targetCol');
+      sel.innerHTML = '<option value="">— Selecciona la columna target —</option>';
+      state.columns.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        sel.appendChild(opt);
+      });
+      state.targetCol = null;
+      buildNewCaseFields([]);
+      checkReady();
+    },
+    error: function() { showFileError('Error al leer el archivo CSV.'); }
+  });
+}
+
+function buildPreview(rows, cols, targetCol) {
+  const tbl = document.getElementById('previewTable');
+  let html = '<thead><tr>';
+  cols.forEach(c => {
+    const cls = c === targetCol ? ' class="target-col"' : '';
+    html += `<th${cls}>${c}${c === targetCol ? ' ★' : ''}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>';
+    cols.forEach(c => {
+      const cls = c === targetCol ? ' class="target-col"' : '';
+      html += `<td${cls}>${row[c] !== undefined && row[c] !== null ? row[c] : ''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+  document.getElementById('previewWrap').classList.add('show');
+}
+
+function onTargetChange() {
+  const sel = document.getElementById('targetCol');
+  state.targetCol = sel.value || null;
+  if (state.csvData && state.targetCol) {
+    buildPreview(state.csvData.slice(0, 5), state.columns, state.targetCol);
+    const featureCols = state.columns.filter(c => c !== state.targetCol);
+    buildNewCaseFields(featureCols);
+  }
+  checkReady();
+}
+
+function buildNewCaseFields(featureCols) {
+  const grid = document.getElementById('newCaseGrid');
+  if (!featureCols.length) {
+    grid.innerHTML = '<p style="color:var(--muted);font-family:var(--mono);font-size:12px;">Carga el CSV y selecciona el target para ver los campos.</p>';
+    return;
+  }
+  grid.innerHTML = '';
+  featureCols.forEach(col => {
+    // Get unique values for this column
+    const vals = [...new Set(state.csvData.map(r => r[col]).filter(v => v !== null && v !== undefined))];
+    const isNumeric = vals.every(v => typeof v === 'number');
+    const div = document.createElement('div');
+    div.className = 'case-field';
+    div.setAttribute('data-col', col);
+    if (!isNumeric && vals.length <= 20) {
+      // Dropdown
+      let opts = vals.map(v => `<option value="${v}">${v}</option>`).join('');
+      div.innerHTML = `<label>${col}</label><select id="cf_${sanitizeId(col)}">${opts}</select>`;
+    } else {
+      div.innerHTML = `<label>${col}</label><input type="${isNumeric ? 'number' : 'text'}" id="cf_${sanitizeId(col)}" placeholder="${vals[0] !== undefined ? vals[0] : ''}">`;
+    }
+    grid.appendChild(div);
+  });
+}
+
+function sanitizeId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function checkReady() {
+  const ok = state.csvData && state.targetCol;
+  document.getElementById('runBtn').disabled = !ok;
+}
+
+// ── Model (pure JS decision tree) ─────────────────────────────────────────
+// Simple but functional CART implementation in JS
+
+function runModel() {
+  if (!state.csvData || !state.targetCol) return;
+
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('resultCard').classList.remove('show');
+
+  setTimeout(() => {
+    try {
+      const featureCols = state.columns.filter(c => c !== state.targetCol);
+      const maxDepth = parseInt(document.getElementById('maxDepth').value) || Infinity;
+      const doSplit = document.getElementById('doSplit').checked;
+      const criterion = state.criterion;
+
+      // Encode data
+      const { X, y, classNames, encodings } = encodeData(state.csvData, featureCols, state.targetCol);
+
+      let trainX = X, trainY = y, testX = null, testY = null;
+      if (doSplit && X.length > 10) {
+        const split = trainTestSplit(X, y, 0.2);
+        trainX = split.trainX; trainY = split.trainY;
+        testX = split.testX;   testY  = split.testY;
+      }
+
+      // Train tree
+      const tree = buildTree(trainX, trainY, featureCols, 0, maxDepth, criterion);
+
+      // Predict new case
+      const newCaseRaw = readNewCase(featureCols);
+      const newCaseEnc = encodeCase(newCaseRaw, featureCols, encodings);
+      const { label: predLabel, probs } = predictTree(tree, newCaseEnc, classNames);
+
+      // Accuracy
+      const evalX = testX || trainX;
+      const evalY = testY || trainY;
+      const preds = evalX.map(row => predictTree(tree, row, classNames).label);
+      const acc = preds.filter((p,i) => p === classNames[evalY[i]]).length / preds.length;
+
+      // Rules
+      const rules = treeToText(tree, featureCols, classNames);
+
+      // Show result
+      showResult(predLabel, probs, classNames, acc, rules, testX ? 'TEST' : 'TRAIN');
+
+    } catch(e) {
+      console.error(e);
+      showFileError('Error al entrenar: ' + e.message);
+    }
+    document.getElementById('loading').classList.remove('show');
+  }, 40);
+}
+
+function readNewCase(featureCols) {
+  const obj = {};
+  featureCols.forEach(col => {
+    const el = document.getElementById('cf_' + sanitizeId(col));
+    obj[col] = el ? el.value : '';
+  });
+  return obj;
+}
+
+// ── Encoding ───────────────────────────────────────────────────────────────
+function encodeData(data, featureCols, targetCol) {
+  const encodings = {}; // col -> {val -> index}
+  const classMap = {};
+  const classNames = [];
+
+  // Build encodings from data
+  featureCols.forEach(col => {
+    const vals = [...new Set(data.map(r => r[col]))].filter(v => v !== null && v !== undefined);
+    if (vals.some(v => typeof v !== 'number')) {
+      encodings[col] = {};
+      vals.sort().forEach((v, i) => encodings[col][String(v)] = i);
+    }
+  });
+
+  // Target
+  const targetVals = [...new Set(data.map(r => r[targetCol]))].filter(v => v !== null);
+  targetVals.sort().forEach((v, i) => { classMap[String(v)] = i; classNames.push(String(v)); });
+
+  const X = data.map(row => {
+    return featureCols.map(col => {
+      const v = row[col];
+      if (encodings[col]) return encodings[col][String(v)] !== undefined ? encodings[col][String(v)] : 0;
+      return typeof v === 'number' ? v : 0;
+    });
+  });
+
+  const y = data.map(row => classMap[String(row[targetCol])] !== undefined ? classMap[String(row[targetCol])] : 0);
+
+  return { X, y, classNames, encodings };
+}
+
+function encodeCase(caseObj, featureCols, encodings) {
+  return featureCols.map(col => {
+    const v = caseObj[col];
+    if (encodings[col]) {
+      const enc = encodings[col][String(v)];
+      return enc !== undefined ? enc : 0;
+    }
+    return typeof v === 'string' ? parseFloat(v) || 0 : (typeof v === 'number' ? v : 0);
+  });
+}
+
+// ── Train/Test Split ───────────────────────────────────────────────────────
+function trainTestSplit(X, y, testSize) {
+  const n = X.length;
+  const idx = shuffle([...Array(n).keys()]);
+  const cutoff = Math.floor(n * (1 - testSize));
+  const trainIdx = idx.slice(0, cutoff);
+  const testIdx = idx.slice(cutoff);
+  return {
+    trainX: trainIdx.map(i => X[i]), trainY: trainIdx.map(i => y[i]),
+    testX: testIdx.map(i => X[i]),   testY: testIdx.map(i => y[i]),
+  };
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── Decision Tree (CART) ───────────────────────────────────────────────────
+function impurity(y, criterion) {
+  if (!y.length) return 0;
+  const counts = {};
+  y.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  const total = y.length;
+  if (criterion === 'gini') {
+    let g = 1;
+    Object.values(counts).forEach(c => g -= (c / total) ** 2);
+    return g;
+  } else { // entropy
+    let e = 0;
+    Object.values(counts).forEach(c => { const p = c / total; if (p > 0) e -= p * Math.log2(p); });
+    return e;
+  }
+}
+
+function bestSplit(X, y, featureCols, criterion) {
+  const n = X.length;
+  let bestGain = -Infinity, bestFeat = null, bestThresh = null;
+  const parentImp = impurity(y, criterion);
+
+  for (let fi = 0; fi < featureCols.length; fi++) {
+    const vals = [...new Set(X.map(r => r[fi]))].sort((a, b) => a - b);
+    for (let t = 0; t < vals.length - 1; t++) {
+      const thresh = (vals[t] + vals[t + 1]) / 2;
+      const leftY = [], rightY = [];
+      X.forEach((row, i) => (row[fi] <= thresh ? leftY : rightY).push(y[i]));
+      if (!leftY.length || !rightY.length) continue;
+      const gain = parentImp
+        - (leftY.length / n) * impurity(leftY, criterion)
+        - (rightY.length / n) * impurity(rightY, criterion);
+      if (gain > bestGain) { bestGain = gain; bestFeat = fi; bestThresh = thresh; }
+    }
+  }
+  return { bestFeat, bestThresh, bestGain };
+}
+
+function majorityClass(y) {
+  const counts = {};
+  y.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  return parseInt(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
+}
+
+function classProbs(y, numClasses) {
+  const counts = new Array(numClasses).fill(0);
+  y.forEach(v => counts[v]++);
+  return counts.map(c => c / y.length);
+}
+
+function buildTree(X, y, featureCols, depth, maxDepth, criterion) {
+  const numClasses = Math.max(...y) + 1;
+  const probs = classProbs(y, numClasses);
+
+  // Stopping conditions
+  if (y.every(v => v === y[0]) || depth >= maxDepth || X.length < 2) {
+    return { leaf: true, classIdx: majorityClass(y), probs };
+  }
+
+  const { bestFeat, bestThresh, bestGain } = bestSplit(X, y, featureCols, criterion);
+  if (bestFeat === null || bestGain <= 0) {
+    return { leaf: true, classIdx: majorityClass(y), probs };
+  }
+
+  const leftX = [], leftY = [], rightX = [], rightY = [];
+  X.forEach((row, i) => {
+    if (row[bestFeat] <= bestThresh) { leftX.push(row); leftY.push(y[i]); }
+    else { rightX.push(row); rightY.push(y[i]); }
+  });
+
+  return {
+    leaf: false,
+    feat: bestFeat,
+    thresh: bestThresh,
+    probs,
+    left: buildTree(leftX, leftY, featureCols, depth + 1, maxDepth, criterion),
+    right: buildTree(rightX, rightY, featureCols, depth + 1, maxDepth, criterion),
+  };
+}
+
+function predictTree(node, x, classNames) {
+  if (node.leaf) {
+    return {
+      label: classNames[node.classIdx] || String(node.classIdx),
+      probs: node.probs
+    };
+  }
+  return x[node.feat] <= node.thresh
+    ? predictTree(node.left, x, classNames)
+    : predictTree(node.right, x, classNames);
+}
+
+function treeToText(node, featureCols, classNames, prefix = '', isLeft = null, isRoot = true) {
+  if (node.leaf) {
+    const dir = isLeft === null ? '' : (isLeft ? '|-- [≤] ' : '|-- [>] ');
+    return prefix + dir + `class: ${classNames[node.classIdx]}\n`;
+  }
+  const feat = featureCols[node.feat];
+  const thr = node.thresh.toFixed(3);
+  let text = '';
+  if (isRoot) text += `|-- ${feat} <= ${thr}\n`;
+  else text += prefix + (isLeft ? '|-- ' : '|-- ') + `${feat} <= ${thr}\n`;
+  text += treeToText(node.left, featureCols, classNames, prefix + '|   ', true, false);
+  text += treeToText(node.right, featureCols, classNames, prefix + '    ', false, false);
+  return text;
+}
+
+// ── Show Result ────────────────────────────────────────────────────────────
+function showResult(predLabel, probs, classNames, acc, rules, evalType) {
+  document.getElementById('resultClass').textContent = predLabel;
+
+  // Probs
+  const probsEl = document.getElementById('resultProbs');
+  probsEl.innerHTML = '';
+  classNames.forEach((name, i) => {
+    const pct = probs && probs[i] !== undefined ? probs[i] : 0;
+    const row = document.createElement('div');
+    row.className = 'prob-row';
+    row.innerHTML = `
+      <span class="prob-name">${name}</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" id="pb_${i}"></div></div>
+      <span class="prob-val">${(pct * 100).toFixed(1)}%</span>
+    `;
+    probsEl.appendChild(row);
+    setTimeout(() => {
+      document.getElementById('pb_' + i).style.width = (pct * 100) + '%';
+    }, 80);
+  });
+
+  document.getElementById('accuracyVal').textContent =
+    `Accuracy (${evalType}): ${(acc * 100).toFixed(1)}%`;
+
+  document.getElementById('rulesText').textContent = rules;
+  document.getElementById('resultCard').classList.add('show');
+}
+</script>
+</body>
+</html>
